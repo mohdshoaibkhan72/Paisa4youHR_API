@@ -26,31 +26,44 @@ dbConnection();
 
 // CORS Configuration
 const corsOption = {
-  credentials: true,
-  origin: ["http://localhost:3000", "http://1.1.1.111:3000", CLIENT_URL],
+  credentials: true, // Allow sending cookies
+  origin: (origin, callback) => {
+    const whitelist = [
+      "http://localhost:3000",
+      "http://192.168.1.101:3000",
+      CLIENT_URL,
+    ];
+
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
+      callback(null, true); // Allow request
+    } else {
+      callback(new Error("Not allowed by CORS")); // Block request
+    }
+  },
 };
-app.use(cors(corsOption));
+
+app.use(cors(corsOption)); // Use the CORS middleware with your config
 
 // Middleware Setup
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cookieParser());
+app.use(cookieParser()); // Allow cookie parsing
 
 // Routes
 app.use("/api/auth", authRoute);
 app.use("/api/admin", auth, authRole(["admin"]), adminRoute);
 app.use("/api/employee", auth, authRole(["employee", "leader"]), employeeRoute);
 app.use("/api/leader", auth, authRole(["leader"]), leaderRoute);
-app.use("/storage", express.static("storage"));
+app.use("/storage", express.static("storage")); // Serve static files
 
-// Error Handling
+// Error Handling for Unmatched Routes
 app.use((req, res, next) => {
-  return next(ErrorHandler.notFound("The Requested Resources Not Found"));
+  return next(ErrorHandler.notFound("The Requested Resource Not Found"));
 });
 
-app.use(errorMiddleware);
+app.use(errorMiddleware); // Custom error handling middleware
 
-// Root Route
+// Test Root Route
 app.get("/shoiab", (req, res) => {
   res.json("OK");
 });
